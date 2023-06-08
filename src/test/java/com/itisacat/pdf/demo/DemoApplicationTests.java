@@ -37,8 +37,9 @@ class DemoApplicationTests {
     @Autowired
     private FreeMarkerTool freeMarkerTool;
 
+    //生成pdf后替换盖章的位置
     @Test
-    public void html2Pdf() throws IOException {
+    public void html2PdfWithSign() throws IOException {
         //1-获取html
         String html = getHtml();
         //2-生成pdf
@@ -99,6 +100,7 @@ class DemoApplicationTests {
         outputStreamPdfNew.close();
     }
 
+    //生成pdf后替换盖章的位置，利用doc功能可以支持强制分页，可以支持段落必须在一页中
     @Test
     public void doc2Pdf() throws IOException {
         Map<String, String> signFillValues = ImmutableMap.of("${seal}", "", "${sealDate}", "");
@@ -125,6 +127,98 @@ class DemoApplicationTests {
         } catch (Exception e) {
             throw new RuntimeException("生成合同文件异常");
         }
-
     }
+
+
+    //html转pdf,包含图片、checkbox,radio
+    @Test
+    public void testHtml2Pdf() {
+        try {
+            FileOutputStream accessOut = new FileOutputStream("output.pdf");
+            PdfWriter accessWriter = new PdfWriter(accessOut);
+            PdfDocument document = new PdfDocument(accessWriter);
+            //设置纸张大小,A4
+            FontProvider fontProvider = new FontProvider();
+            fontProvider.addFont(System.getProperty("user.dir") + "\\font\\simfang.ttf");
+            ConverterProperties properties = new ConverterProperties();
+            properties.setFontProvider(fontProvider);
+            properties.setCharset("utf-8");
+            HtmlConverter.convertToPdf(getTestHtml(), document, properties);
+            System.out.println("PDF generated successfully.");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String getTestHtml() {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("number", 1);
+        jsonObject.put("name", "test1");
+        jsonObject.put("contractNo", "HSF123");
+        jsonObject.put("servicePrice", "100.00");
+        jsonObject.put("financePrice", "50.00");
+        jsonObject.put("payPrice", "2000.00");
+        jsonObject.put("dueDate", "2023-02-21");
+        Map<String, Object> map = new HashMap<>();
+        map.put("contractNo", 111111);
+        map.put("list", Arrays.asList(jsonObject));
+        map.put("seal", "${seal}");
+        map.put("sealDate", "${sealDate}");
+        return freeMarkerTool.process("test", map);
+    }
+
+//region 使用Jsoup解析html元素
+//    @Test
+//    public void JsoupTest() {
+//        String html = "<html><body>"
+//                + "<h1>Hello, World!</h1>"
+//                + "<img src='https://cc.hjfile.cn/cc/img/20230519/2023051904120936475935.jpg' style='width:400px;height:400px;'>" +
+//                "<input type=\"checkbox\" name=\"option\" value=\"1\" checked /> Option 1" +
+//                "<input type=\"checkbox\" name=\"option\" value=\"2\" /> Option 2" +
+//                "<input type=\"radio\" name=\"radio\" value=\"2\" checked/> first" +
+//                "<input type=\"radio\" name=\"radio\" value=\"3\" /> second" +
+//                "</body></html>";
+//
+//        try {
+//            org.jsoup.nodes.Document document = Jsoup.parse(html);
+//            com.itextpdf.text.Document pdfDocument = new com.itextpdf.text.Document();
+//            PdfWriter writer = PdfWriter.getInstance(pdfDocument, new FileOutputStream("output.pdf"));
+//            pdfDocument.open();
+//            // Process each element in the HTML document
+//            for (Element element : document.body().children()) {
+//                processElement(pdfDocument, writer, element);
+//            }
+//            pdfDocument.close();
+//            System.out.println("PDF generated successfully.");
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } catch (DocumentException e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//    }
+//
+//    private static void processElement(com.itextpdf.text.Document pdfDocument, PdfWriter writer, Element element) throws com.itextpdf.text.DocumentException, IOException {
+//        switch (element.tagName()) {
+//            case "h1":
+//                pdfDocument.add(new com.itextpdf.text.Paragraph(element.text()));
+//                break;
+//            case "img":
+//                String imageUrl = element.attr("src");
+//                com.itextpdf.text.Image image = com.itextpdf.text.Image.getInstance(imageUrl);
+//                pdfDocument.add(image);
+//                break;
+//            case "input":
+//                if (element.attr("type").equals("checkbox")) {
+//                    boolean checked = element.hasAttr("checked");
+//                    String value = element.val();
+//                    createCheckboxField(writer, value, checked);
+//                }
+//                break;
+//            default:
+//                // Handle other element types if needed
+//                break;
+//        }
+//    }
+    //endregion
 }
